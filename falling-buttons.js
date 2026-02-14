@@ -327,31 +327,35 @@ class FallingButtons  extends ThreeScene {
     }
 }
 
-let attachAccelerometerDone = false;
-window.addEventListener("click", async (e) => {
-    if (!attachAccelerometerDone && window.DeviceMotionEvent) {
-        attachAccelerometerDone = true;
-        if( typeof DeviceMotionEvent.requestPermission === "function") {
-            try {
-                const response = await DeviceMotionEvent.requestPermission();
-            } catch (error) {
-                console.log("Denied permission to access device motion.", error);
-            }
-        } 
-    }
-})
 
-let ewaX = 0;
-let ewaY = 0;
-window.addEventListener("devicemotion", (event) => {
-    // const acc = event.acceleration; // m/s², without gravity
-    console.log("Device motion event:", event);
-    const accG = event.accelerationIncludingGravity; // m/s², includes gravity
-    if (accG.x !== null && accG.y !== null) {
-        ewaX = ewaX * 0.9 + accG.x * 0.1;
-        ewaY = ewaY * 0.9 + accG.y * 0.1;
-        let accDir = Math.atan2(ewaX, ewaY);
-        document.body.style.setProperty("--angle", accDir * 180 / Math.PI + "deg");
-    }
-});
+let queryParams = new URLSearchParams(window.location.search);
+if (queryParams.has("rotate")) {
+    let attachAccelerometerDone = false;
+    window.addEventListener("click", async (e) => {
+        if (!attachAccelerometerDone && window.DeviceMotionEvent) {
+            attachAccelerometerDone = true;
+            if( typeof DeviceMotionEvent.requestPermission === "function") {
+                try {
+                    const response = await DeviceMotionEvent.requestPermission();
+                } catch (error) {
+                    console.log("Denied permission to access device motion.", error);
+                }
+            } 
+        }
+    })
+    
+    let ewaX = 0;
+    let ewaY = 0;
+    window.addEventListener("devicemotion", (event) => {
+        // const acc = event.acceleration; // m/s², without gravity
+        console.log("Device motion event:", event);
+        const accG = event.accelerationIncludingGravity; // m/s², includes gravity
+        if (accG.x !== null && accG.y !== null) {
+            ewaX = ewaX * 0.9 + accG.x * 0.1;
+            ewaY = ewaY * 0.9 + accG.y * 0.1;
+            let accDir = Math.atan2(ewaX, ewaY);
+            document.body.style.setProperty("--angle", accDir * 180 / Math.PI + "deg");
+        }
+    });
+}
 customElements.define('falling-buttons', FallingButtons);
