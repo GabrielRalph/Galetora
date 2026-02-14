@@ -1,0 +1,8 @@
+{
+    "liveServer.settings.https": {
+        "enable": true,
+        "cert": "/Users/gabrielralph/Desktop/Projects/Galetora/private/localhost.crt",
+        "key": "/Users/gabrielralph/Desktop/Projects/Galetora/private/localhost.key",
+        "passphrase": "gabrielLTR"
+    }
+}

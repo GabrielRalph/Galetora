@@ -1,27 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900">
-    <title>Galetora</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <h1 onclick = "window.open('http://13.237.116.189/')">TCG SPA</h1>
-    <h1 onclick = "window.open('https://www.hub.guru')">GURU</h1>
-  </body>
-</html>
-<style type = "text/css">
-
-  h1{
-    text-align: center;
-    font-family: "Roboto";
-    font-size: 50px;
-    cursor: pointer;
-  }
-</style>
-<script src = "main.js" type="text/javascript">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="module" src="./falling-buttons.js"></script>
+</head>
+<body>
+    <falling-buttons class = "behind" z-range="-150, 0" environment = "./Assets/uluru.png"></falling-buttons>
+    <div class = "centered">
+        <h1>GALETORA</h1>
+        <h2>Comming Soon</h2>
+        <!-- <div>∆z=0</div> -->
+    </div>
+    <falling-buttons  environment = "./Assets/uluru.png"></falling-buttons>
+</body>
+<script type = "module">
+    
 
 </script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+   
+    falling-buttons {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+    
+    .behind {
+        z-index: -1;
+    }   
+    .centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(calc(180deg + var(--angle, -180deg)));
+        text-align: center;
+        color: rgb(0, 0, 0);
+        font-family: "Playfair Display", serif;
+        /* font-family: "Libre Caslon Text", serif; */
+        /* font-family: Arial, sans-serif; */
+        font-size: min(4vw, 2em);
+        
+    }
+    .centered h1, .centered h2 {
+        margin: 0;
+        font-weight: 400;;
+    }
+</style>
+</html>
