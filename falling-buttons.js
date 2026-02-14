@@ -6,6 +6,21 @@ import { ZIPLoader } from "./Resources/Three/Loaders/ZIPLoader.js";
 
 const ZipedShapes = "./Assets/poissonButtons.zip";
 
+const GlowMaterial = new THREE.MeshPhysicalMaterial({ 
+    color: 0xf3ecec,
+    metalness: 0.,
+    roughness: 1,
+    reflectivity: 0,
+    iridescence: 0,
+    emissive: 0xf78103, // #f78103
+    emissiveIntensity: 1,
+});
+const MetalMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xf3ecec,
+    metalness: 1,
+    roughness: 0,
+    reflectivity: 1,
+});
 
 class FallingMesh extends THREE.Mesh {
     gravity = -0.001;
@@ -15,12 +30,7 @@ class FallingMesh extends THREE.Mesh {
 
     constructor(geometry, material) {
         if (!(material instanceof THREE.Material)) {
-            material = new THREE.MeshPhysicalMaterial({ 
-                color: 0xf3ecec,
-                metalness: 1,
-                roughness: 0,
-                reflectivity: 1,
-            });
+            material = MetalMaterial;
         }
         super(geometry, material);
         this.v = [0, 0, 0];
@@ -94,9 +104,7 @@ class FallingMesh extends THREE.Mesh {
         if (typeof options !== "object" || options === null) options = {};
 
         const zipLoader = new ZIPLoader();
-        console.log("Loading zip file:", url);
         const data = await zipLoader.loadAsync(url, options.onProgress);
-        console.log("Zip file loaded:", data);
         const meshes = {}
         for (let fileName in data) {
             meshes[fileName] = new FallingMesh(data[fileName], options.material);
@@ -128,13 +136,61 @@ class FallingButtons  extends ThreeScene {
 
     heightPadding = 20;
     zRange = [0, 150]
-
+    count = 0;
     constructor() {
         super();
         this.load();
         this.camera.position.set(0, 0, 300);
         this.camera.lookAt(0, 0, 0);
         this.addDragControls();
+        // this.createBloomPass();
+    }
+
+
+    async createBloomPass() {
+        console.log("Creating bloom pass...");
+        const { EffectComposer } = await import("./Resources/Three/Effects/postprocessing/EffectComposer.js");
+        const { RenderPass } = await import("./Resources/Three/Effects/postprocessing/RenderPass.js");
+        const { UnrealBloomPass } = await import("./Resources/Three/Effects/postprocessing/UnrealBloomPass.js");
+     
+        this.composer = new EffectComposer(this.renderer);
+        this.renderPass = new RenderPass(this.scene, this.camera);
+
+        this.bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(this.innerWidth, this.innerHeight),
+            1.5,
+            0.4,
+            0.9
+        );
+        this.composer.setSize(this.clientWidth, this.clientHeight);
+        this.ready = this.clientHeight > 0 && this.clientWidth > 0;
+
+        this.composer.addPass(this.renderPass);
+        this.composer.addPass(this.bloomPass);
+    }
+
+
+    /**
+     * Handles resizing of the scene, ensuring that the camera and bloom pass are updated
+     * 
+     */
+    resize() {
+        super.resize();
+        this.camera.lookAt(0, 0, 0);
+        if (this.composer) {
+            this.bloomPass.setSize(this.clientWidth, this.clientHeight);
+            this.composer.setSize(this.clientWidth, this.clientHeight);
+            this.renderPass.camera = this.camera;
+            this.ready = this.clientHeight > 0 && this.clientWidth > 0;
+        }
+    }
+
+    renderScene() {
+        if (this.ready && this.composer) {
+            this.composer.render();
+        } else {
+            this.renderer.render(this.scene, this.camera);
+        }
     }
 
     getSizeAtZ(z) {
@@ -158,10 +214,6 @@ class FallingButtons  extends ThreeScene {
         return [randomX, y, randomZ];
     }
 
-    resize() {
-        super.resize();
-        this.camera.lookAt(0, 0, 0);
-    }
 
     beforeRender() {
         this.iStart += 0.01;
@@ -278,8 +330,6 @@ class FallingButtons  extends ThreeScene {
             const row = Math.floor(i / cols);
             const col = i % cols;
 
-            console.log((col - cols / 2 + 0.5) * 25,
-                (row - rows / 2 + 0.5) * 25)
             mesh.position.set(
                 (col - cols / 2 + 0.5) * 25,
                 (row - rows / 2 + 0.5) * 25,
@@ -348,7 +398,6 @@ if (queryParams.has("rotate")) {
     let ewaY = 0;
     window.addEventListener("devicemotion", (event) => {
         // const acc = event.acceleration; // m/s², without gravity
-        console.log("Device motion event:", event);
         const accG = event.accelerationIncludingGravity; // m/s², includes gravity
         if (accG.x !== null && accG.y !== null) {
             ewaX = ewaX * 0.9 + accG.x * 0.1;

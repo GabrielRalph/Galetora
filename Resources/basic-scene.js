@@ -26,7 +26,7 @@ export class ThreeScene extends HTMLElement {
         }
 
 
-        const camera = new THREE.PerspectiveCamera(75, this.innerWidth / this.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(this.cameraFOV, this.innerWidth / this.innerHeight, 0.1, 1000);
         camera.position.set(0, 50, 100);
 
         // preserveDrawingBuffer ensures toDataURL works reliably for screenshots
@@ -73,9 +73,11 @@ export class ThreeScene extends HTMLElement {
     resize() {
         if (this.renderer) {
             let { clientWidth, clientHeight } = this;
+            let pos = this.camera.position.toArray();
+            // this.camera.aspect = clientWidth / clientHeight;
+            // this.camera.updateProjectionMatrix();
             this.renderer.setSize(clientWidth, clientHeight);
             this.renderer.setPixelRatio(window.devicePixelRatio);
-            let pos = this.camera.position.toArray();
             this.camera = new THREE.PerspectiveCamera(this.cameraFOV, clientWidth / clientHeight, 0.1, 1000);
             this.camera.position.set(...pos);
         }
@@ -124,6 +126,11 @@ export class ThreeScene extends HTMLElement {
     }
 
 
+    renderScene() {
+        this.renderer.render(this.scene, this.camera);
+    }
+
+
     async start() {
         let stop = false;
         this.stop = () => {
@@ -141,7 +148,7 @@ export class ThreeScene extends HTMLElement {
                 }
             }
 
-            this.renderer.render(this.scene, this.camera);
+            this.renderScene();
 
             if (this.afterRender instanceof Function) {
                 this.afterRender()
