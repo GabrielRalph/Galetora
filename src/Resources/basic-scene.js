@@ -14,6 +14,8 @@ export function relURL(url, meta) {
   }
 export class ThreeScene extends HTMLElement {
     cameraFOV = 75;
+    cameraNear = 0.1;
+    cameraFar = 1000;
     constructor() {
         super();
         this._viewScale = 3;
@@ -26,8 +28,8 @@ export class ThreeScene extends HTMLElement {
         }
 
 
-        const camera = new THREE.PerspectiveCamera(this.cameraFOV, this.innerWidth / this.innerHeight, 0.1, 1000);
-        camera.position.set(0, 50, 100);
+        const camera = new THREE.PerspectiveCamera(this.cameraFOV, this.innerWidth / this.innerHeight, this.cameraNear, this.cameraFar);
+        camera.position.set(0, 0, 100);
 
         // preserveDrawingBuffer ensures toDataURL works reliably for screenshots
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -59,6 +61,13 @@ export class ThreeScene extends HTMLElement {
         this.root = root;
         this.controls = controls;
     }
+
+
+    getViewSizeAtZ(z) {
+        const viewSize = new THREE.Vector2(); // Target vector to store the result
+        this.camera.getViewSize(this.camera.position.z - z, viewSize);
+        return [viewSize.x, viewSize.y];
+    }
  
 
     addSphere(radius = 1, pos, color = 0x00ff00) {
@@ -74,13 +83,12 @@ export class ThreeScene extends HTMLElement {
         if (this.renderer) {
             let { clientWidth, clientHeight } = this;
             let pos = this.camera.position.toArray();
-            // this.camera.aspect = clientWidth / clientHeight;
-            // this.camera.updateProjectionMatrix();
             this.renderer.setSize(clientWidth, clientHeight);
             this.renderer.setPixelRatio(window.devicePixelRatio);
-            this.camera = new THREE.PerspectiveCamera(this.cameraFOV, clientWidth / clientHeight, 0.1, 1000);
+            this.camera = new THREE.PerspectiveCamera(this.cameraFOV, clientWidth / clientHeight, this.cameraNear, this.cameraFar);
             this.camera.position.set(...pos);
         }
+        this.dispatchEvent(new Event("resize"));
     }
 
     connectedCallback() {
@@ -159,7 +167,6 @@ export class ThreeScene extends HTMLElement {
     stop() { }
 
     add(object) {
-
         if (object instanceof PointCloud) {
             if (!this.pointclouds) this.pointclouds = [];
             this.pointclouds.push(object);
@@ -184,11 +191,17 @@ export class ThreeScene extends HTMLElement {
     }
 
 
-    parseEnvironmentTexture(texture) {
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        this.scene.environment = texture;
+    rayCast(x, y, meshes) {
+        let mouse = new THREE.Vector2(
+            (x / this.clientWidth) * 2 - 1,
+            -(y / this.clientHeight) * 2 + 1
+        );
+        let raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.camera);
+        let intersects = raycaster.intersectObjects(meshes || []);
+        return intersects;
     }
-
+  
 
     set environment(env) {
         console.log("Setting environment:", env);
@@ -218,6 +231,13 @@ export class ThreeScene extends HTMLElement {
                 this.parseEnvironmentTexture(texture);
             }
         })
+    }
+
+
+    parseEnvironmentTexture(texture) {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        this.scene.environment = texture;
     }
 
 

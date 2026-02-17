@@ -1,127 +1,8 @@
-import { ThreeScene } from "./Resources/basic-scene.js";
-import { STLLoader } from "./Resources/Three/Loaders/STLLoader.js";
-import * as THREE from "./Resources/Three/three.js";
-import { VNFLoader } from "./Resources/Three/Loaders/VNFLoader.js";
-import { ZIPLoader } from "./Resources/Three/Loaders/ZIPLoader.js";
+import { ThreeScene } from "../Resources/basic-scene.js";
+import * as THREE from "../Resources/Three/three.js";
+import { Button } from "./button.js";
 
 const ZipedShapes = "./Assets/poissonButtons.zip";
-
-const GlowMaterial = new THREE.MeshPhysicalMaterial({ 
-    color: 0xf3ecec,
-    metalness: 0.,
-    roughness: 1,
-    reflectivity: 0,
-    iridescence: 0,
-    emissive: 0xf78103, // #f78103
-    emissiveIntensity: 1,
-});
-const MetalMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xf3ecec,
-    metalness: 1,
-    roughness: 0,
-    reflectivity: 1,
-});
-
-class FallingMesh extends THREE.Mesh {
-    gravity = -0.001;
-    maxDrag = 0.01;
-    maxRotAcc = [0.001, 0.01, 0.001];
-    initialRotation = [0, 0, -Math.PI/2];
-
-    constructor(geometry, material) {
-        if (!(material instanceof THREE.Material)) {
-            material = MetalMaterial;
-        }
-        super(geometry, material);
-        this.v = [0, 0, 0];
-        this.a = [0, -0.001, 0];
-        this.drag = [0, Math.random() * 0.01, 0];
-        this.rot_acc = [Math.random() * 0.001, Math.random() * 0.01, Math.random() * 0.001];
-    }
-
-
-    set floatOffset(val) {
-        this._floatOffset = val;
-        let newPos = this._startPosition.map((p, i) => p + val[i]);
-        this.position.set(...newPos);
-    }
-
-    set floating(val) {
-        this._floating = val;
-        if (val) {
-            this.v = [0, 0, 0];
-            this.a = [0, this.gravity, 0];
-            this.rot_acc = this.maxRotAcc.map(r => Math.random() * r);
-            this._startPosition = this.position.toArray();
-        }
-    }
-
-    get floating() {
-        return this._floating;
-    }
-
-    reset(pos) {
-        this.position.set(...pos);
-
-        // Reset rotation
-        this.rotation.set(...this.initialRotation);
-
-        // Reset velocity, acceleration, drag, and rotational acceleration
-        this.v = [0, 0, 0];
-        this.a = [0, this.gravity, 0];
-        this.drag = [0, Math.random() * this.maxDrag, 0];
-        this.rot_acc = this.maxRotAcc.map(r => Math.random() * r);
-    }
-
-    upate() {
-        if (!this.floating) {
-            this.v = this.v.map((v, i) => v + this.a[i] - Math.sign(this.v[i]) * (this.v[i] ** 2) * this.drag[i]);
-            let pos = this.position.toArray().map((p, i) => p + this.v[i])
-            this.position.set(...pos);
-
-            let rot = this.rotation.toArray().slice(0,3).map((r, i) => r + this.rot_acc[i]);
-            this.rotation.set(...rot);
-        }
-    }
-
-    static async loadFile(url, options = {}) {
-        if (typeof options !== "object" || options === null) options = {};
-
-        let ext = url.split(".").slice(-1)[0].toLowerCase();
-        let loader = null;
-        switch (ext) {
-            case "stl": loader = new STLLoader(); break;
-            case "vnf": loader = new VNFLoader(); break;
-            default:
-                throw new Error("Unsupported file format: " + ext);
-        }
-        let geometry = await loader.loadAsync(url, options.onProgress);
-        geometry = mergeVertices(geometry);
-        return new FallingMesh(geometry, options.material);
-    }
-
-    static async loadFromZip(url, options = {}) {
-        if (typeof options !== "object" || options === null) options = {};
-
-        const zipLoader = new ZIPLoader();
-        const data = await zipLoader.loadAsync(url, options.onProgress);
-        const meshes = {}
-        for (let fileName in data) {
-            meshes[fileName] = new FallingMesh(data[fileName], options.material);
-        }
-        return meshes;
-    }
-
-    clone() {
-        let clone = super.clone();
-        clone.v = [...this.v];
-        clone.a = [...this.a];
-        clone.drag = [...this.drag];
-        clone.rot_acc = [...this.rot_acc];
-        return clone;
-    }
-}
-
 
 class FallingButtons  extends ThreeScene {
 
@@ -149,9 +30,9 @@ class FallingButtons  extends ThreeScene {
 
     async createBloomPass() {
         console.log("Creating bloom pass...");
-        const { EffectComposer } = await import("./Resources/Three/Effects/postprocessing/EffectComposer.js");
-        const { RenderPass } = await import("./Resources/Three/Effects/postprocessing/RenderPass.js");
-        const { UnrealBloomPass } = await import("./Resources/Three/Effects/postprocessing/UnrealBloomPass.js");
+        const { EffectComposer } = await import("../Resources/Three/Effects/postprocessing/EffectComposer.js");
+        const { RenderPass } = await import("../Resources/Three/Effects/postprocessing/RenderPass.js");
+        const { UnrealBloomPass } = await import("../Resources/Three/Effects/postprocessing/UnrealBloomPass.js");
      
         this.composer = new EffectComposer(this.renderer);
         this.renderPass = new RenderPass(this.scene, this.camera);
@@ -246,37 +127,47 @@ class FallingButtons  extends ThreeScene {
 
     addDragControls() {
         let selectedMesh = null;
-        let startPos = [0, 0];
-        let lastDelta = [0, 0];
+        let selected = {};
+        let idleTouches = {};
+        
 
-        let onSelect = async (x, y) => {
+        let onSelect = (x, y, id = "m") => {
             let intersects = this.rayCast(x, y);
             if (intersects.length > 0) {
-                selectedMesh = intersects[0].object;
-                selectedMesh.floating = true;
-                startPos = [x, y];
+                const mesh = intersects[0].object;
+                if (!mesh.floating) {
+                    mesh.floating = true;
+                    selected[id] = {
+                        startPos: [x, y],
+                        lastDelta: [0, 0],
+                        mesh
+                    }
+                }
+                return true;
             }
+            return false;
         }
 
-        let onMove = (x, y) => {
-            if (selectedMesh) {
+        let onMove = (x, y, id = "m") => {
+            if (id in selected) {
+                const { startPos, lastDelta, mesh } = selected[id];
                 let deltapX = x - startPos[0];
                 let deltapY = y - startPos[1];
                 let deltaX =  (deltapX / this.clientWidth);
                 let deltaY =  -(deltapY / this.clientHeight);
-                let z = selectedMesh.position.z;
+                let z = mesh.position.z;
                 let [widthAtZ, heightAtZ] = this.getSizeAtZ(z);
-                selectedMesh.floatOffset = [deltaX * widthAtZ, deltaY * heightAtZ, 0];
+                mesh.floatOffset = [deltaX * widthAtZ, deltaY * heightAtZ, 0];
                 let v = [(deltaX - lastDelta[0]) * 50, (deltaY - lastDelta[1]) * 50, 0];
-                selectedMesh.v = v;
-                lastDelta = [deltaX, deltaY];
+                mesh.v = v;
+                selected[id].lastDelta = [deltaX, deltaY];
             }
         }
 
-        let onDeselect = () => {
-            if (selectedMesh) {
-                selectedMesh.floating = false;
-                selectedMesh = null;
+        let onDeselect = (id = "m") => {
+            if (id in selected) {
+                selected[id].mesh.floating = false;
+                delete selected[id];
             }
         }
 
@@ -285,20 +176,53 @@ class FallingButtons  extends ThreeScene {
         window.addEventListener("mousemove", (e) => onMove(e.clientX, e.clientY));
         window.addEventListener("mouseup", (e) => onDeselect());
 
+
+        let zoomStartDistance = null;
+        let zoomStartScale = null;
         window.addEventListener("touchstart", async (e) => {
-            if (e.touches.length > 0) {
-                onSelect(e.touches[0].clientX, e.touches[0].clientY);
+            console.log("tstart: ", [...e.touches].map(t => t.identifier).join(", "));
+            let noHits = 0;
+
+            for (let touch of e.touches) {
+                if (!(touch.identifier in selected)) {
+                    noHits += onSelect(touch.clientX, touch.clientY, touch.identifier) ? 0 : 1;
+                }
+            }
+            
+            if (noHits === 1 && Object.keys(selected).length === 1) {
+                // If one button is selected and the user tapped somewhere else
+                let t1 = e.touches[0];
+                let t2 = e.touches[1];
+                zoomStartDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                zoomStartScale = selected[Object.keys(selected)[0]].mesh.scale.x;
+            } else {
+                zoomStartDistance = null;
             }
         });
 
         
 
+
         window.addEventListener("touchmove", (e) => {
-            if (e.touches.length > 0) {
-                onMove(e.touches[0].clientX, e.touches[0].clientY);
+            for (let touch of e.touches) {
+                onMove(touch.clientX, touch.clientY, touch.identifier);
+            }
+
+            if (zoomStartDistance !== null && e.touches.length === 2) {
+                let t1 = e.touches[0];
+                let t2 = e.touches[1];
+                let distance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                let zoomFactor = zoomStartScale * distance / zoomStartDistance;
+                selected[Object.keys(selected)[0]].mesh.scale.set(zoomFactor, zoomFactor, zoomFactor);
             }
         });
-        window.addEventListener("touchend", (e) => onDeselect());
+        window.addEventListener("touchend", (e) => {
+            for (let touch of e.changedTouches) {
+                onDeselect(touch.identifier);
+                delete idleTouches[touch.identifier];
+            }
+            zoomStartDistance = null;
+        });
         this.attachDeviceMotion();
     }
 
@@ -314,14 +238,10 @@ class FallingButtons  extends ThreeScene {
         return intersects;
     }
 
-    parseEnvironmentTexture(texture) {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        this.scene.environment = texture;
-    }
+    
 
     async loadTest() {
-        const meshes = await FallingMesh.loadFromZip(ZipedShapes);
+        const meshes = await Button.loadFromZip(ZipedShapes);
         const n = Object.keys(meshes).length;
         const rows = Math.round(n ** 0.5);
         const cols = Math.ceil(n / rows);
@@ -344,7 +264,7 @@ class FallingButtons  extends ThreeScene {
         const meshes = [];
 
         // Load meshes from zip
-        const meshesOG = await FallingMesh.loadFromZip(ZipedShapes);
+        const meshesOG = await Button.loadFromZip(ZipedShapes);
 
         // Clone meshes according to this.clones
         for (let key in meshesOG) {

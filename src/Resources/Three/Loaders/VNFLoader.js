@@ -91,6 +91,7 @@ class VNFLoader extends LoaderPlus {
         }
 
         const reader = new DataView( data );
+
         const flagByte = reader.getUint8(79, true);
         const useU16 = (flagByte & 1) !== 0;
         const useVN = (flagByte & 2) !== 0;
@@ -105,6 +106,7 @@ class VNFLoader extends LoaderPlus {
         log(`vertexCount: ${nV}`);
         log(`faceCount: ${nF}`);
         const hE = (80+2*cS);
+
 
         const vertices = new Float32Array(data, hE, nV * 3);
 
@@ -129,6 +131,8 @@ class VNFLoader extends LoaderPlus {
 
         geometry.computeBoundingSphere();
         geometry.computeBoundingBox();
+
+        geometry.header = data.slice(0, 79);
 
         return geometry;
 	}
