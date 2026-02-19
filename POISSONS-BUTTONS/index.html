@@ -6,23 +6,77 @@
     <title>POISSONS-BUTTONS</title>
 </head>
 <body>
-    <three-scene environment = "../Assets/uluru.png"></three-scene>
+    <model-viewer environment = "../Assets/uluru.png"></model-viewer>
+    <div class = "model-info"></div>
 </body>
-<script type = "module" src = "./index.js" ></script>
-   
+
+<script type = "module">
+   import "./index.js"
+
+
+
+
 </script>
 
 <style>
   
-    three-scene {
+    model-viewer{
         display: block;
-        width: 100vw;
-        height: 100vh;
         position: fixed;
         top: 0;
         left: 0;
+        bottom: 0;
+        right: 0;
+    }
+
+    img {
+        width: 1em;
+        cursor: pointer;
     }
     
+    .model-info {
+        font-size: 1.5em;
+        position: fixed;
+        top: 0;
+        right: 0;
+        background-color: rgba(0, 0, 0, 0.138);
+        padding: 1em;
+        border-bottom-left-radius: 1em;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    .btn {
+        background: rgba(25, 25, 207, 0.223);
+        padding: 0.3em;
+        box-sizing: border-box;
+        border-radius: 0.5em;
+        cursor: pointer;
+    }
+
+    .model-info {
+        display: flex;
+        flex-direction: column;
+        /* align-items: center; */
+        gap: 0.5em;
+    }
+    .model-info > div {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    b.name {
+        text-transform: capitalize;
+    }
+    
+
+    .model-info:empty {
+        display: none;
+    }
+
+
     .behind {
         z-index: -1;
     }   
