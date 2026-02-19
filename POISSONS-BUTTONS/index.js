@@ -30,7 +30,11 @@ mViewer.addModels(models);
 mViewer.addEventListener("model-selected", e => {
     let html = "";
     if (e?.model) {
-        html += `<div>Name:<b class="name">${e.model.name}</b></div><div class = "btn">button<img src ="../Assets/upload-stl.svg"/></div><div class = "btn">shape<img src ="../Assets/upload-stl.svg"/></div>`;
+        let name = e.model.name;
+        html += `
+        <div>Name:<b class="name">${name}</b></div>
+        <a href="../Assets/STLs/${name}-complete.stl" download="${name}-button.stl"> button <img src ="../Assets/upload-stl.svg"/></a>
+        <a href="../Assets/STLs/${name}.stl" download="${name}-shape.stl"> shape <img src ="../Assets/upload-stl.svg"/></a>`
     }
     modelInfo.innerHTML = html;
 });
