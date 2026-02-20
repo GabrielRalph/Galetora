@@ -9,10 +9,10 @@
 
     <script>
         const sb = [
-            "In a future",
-            "past collapse",
-            "past regrowth",
-            "past earth"
+            "In a Future",
+            "After Collapse",
+            "In Regrowth",
+            // ""
         ]
         class SB extends HTMLElement {
             async connectedCallback() {
@@ -25,7 +25,7 @@
                    if (s === sb[sb.length - 1]) {
                         document.querySelectorAll("falling-buttons").forEach(fb => fb.start());
                    }
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 700));
                    this.innerHTML = "";
                }
                document.body.setAttribute("message", "end");
@@ -36,9 +36,12 @@
 </head>
 <style>
     /* @import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap'); */
-    
+    sb-text {
+        font-size: 8vw;
+    }
     body[message="end"] .message {
         opacity: 0;
+
     }
     body:not([message="end"]) .logo
     , body:not([message="end"]) falling-buttons 
@@ -67,6 +70,10 @@
     .behind {
         z-index: -1;
     }   
+    .message {
+        opacity: 1;
+        transition: opacity 0.5s ease;
+    }
     .centered {
         opacity: 1;
         transition: opacity 0.5s ease;
