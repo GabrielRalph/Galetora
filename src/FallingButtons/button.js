@@ -95,7 +95,6 @@ export class Button extends THREE.Mesh {
                 throw new Error("Unsupported file format: " + ext);
         }
         let geometry = await loader.loadAsync(url, options.onProgress);
-        geometry = mergeVertices(geometry);
         return new this(geometry, options.material);
     }
 

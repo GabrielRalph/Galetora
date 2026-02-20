@@ -1,38 +1,51 @@
 
-import * as THREE from "./Three/three.js";
+import {
+    Scene,
+    PerspectiveCamera,
+    WebGLRenderer,
+    AmbientLight,
+    DirectionalLight,
+    Group,
+    Vector2,
+    Raycaster,
+    Matrix4,
+    SRGBColorSpace,
+    EquirectangularReflectionMapping,
+    TextureLoader
+
+} from "./Three/three.js";
 import { ObjectControls } from './Three/Controls/control.js';
 import { RGBELoader } from './Three/Loaders/RGBELoader.js'
-import {STLLoader} from './Three/Loaders/STLLoader.js';
-import { PointCloud } from "./Three/pc.js";
-
+// import { TextureLoaderXML } from "./Three/Loaders/TextureLoaderXML.js";
 
 export function relURL(url, meta) {
     let root = meta.url;
     url = url.replace(/^\.\//, "/");
     if (url[0] != "/") url = "/" + url;
     return root.split("/").slice(0, -1).join("/") + url;
-  }
+}
+
 export class ThreeScene extends HTMLElement {
     cameraFOV = 75;
     cameraNear = 0.1;
     cameraFar = 1000;
+    _loadPromises = new Map();
     constructor() {
         super();
         this._viewScale = 3;
         this.sizeObserver = null;
-        const scene = new THREE.Scene();
+        const scene = new Scene();
         this.scene = scene;
 
         if (this.cachedEnvironment) {
             this.parseEnvironmentTexture(this.cachedEnvironment);
         }
 
-
-        const camera = new THREE.PerspectiveCamera(this.cameraFOV, this.innerWidth / this.innerHeight, this.cameraNear, this.cameraFar);
+        const camera = new PerspectiveCamera(this.cameraFOV, this.innerWidth / this.innerHeight, this.cameraNear, this.cameraFar);
         camera.position.set(0, 0, 100);
 
         // preserveDrawingBuffer ensures toDataURL works reliably for screenshots
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+        const renderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
         renderer.setSize(this.innerWidth, this.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -41,19 +54,14 @@ export class ThreeScene extends HTMLElement {
         let mat = this.getAttribute("mat");
         if (mat) {
             controls.isCached = false;
-            let m = new THREE.Matrix4();
+            let m = new Matrix4();
             m.fromArray(mat.split(",").map(e => parseFloat(e)));
             controls.matrix = m;
         }
 
-        const light = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(light);
+        this.addDefaultLights();
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(1, 1, 10);
-        scene.add(directionalLight);
-
-        const root = new THREE.Group();
+        const root = new Group();
         scene.add(root);
 
         this.camera = camera;
@@ -63,29 +71,29 @@ export class ThreeScene extends HTMLElement {
     }
 
 
+    addDefaultLights() {
+        const light = new AmbientLight(0xffffff, 0.5);
+        this.scene.add(light);
+
+        const directionalLight = new DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(1, 1, 10);
+        this.scene.add(directionalLight);
+    }
+
+
     getViewSizeAtZ(z) {
-        const viewSize = new THREE.Vector2(); // Target vector to store the result
+        const viewSize = new Vector2(); // Target vector to store the result
         this.camera.getViewSize(this.camera.position.z - z, viewSize);
         return [viewSize.x, viewSize.y];
     }
  
-
-    addSphere(radius = 1, pos, color = 0x00ff00) {
-        const geometry = new THREE.SphereGeometry(radius, 32, 32);
-        const material = new THREE.MeshStandardMaterial({ color: color });
-        const sphere = new THREE.Mesh(geometry, material);
-        sphere.position.set(...pos);
-        this.root.add(sphere);
-        return sphere;
-    }
-
     resize() {
         if (this.renderer) {
             let { clientWidth, clientHeight } = this;
             let pos = this.camera.position.toArray();
             this.renderer.setSize(clientWidth, clientHeight);
             this.renderer.setPixelRatio(window.devicePixelRatio);
-            this.camera = new THREE.PerspectiveCamera(this.cameraFOV, clientWidth / clientHeight, this.cameraNear, this.cameraFar);
+            this.camera = new PerspectiveCamera(this.cameraFOV, clientWidth / clientHeight, this.cameraNear, this.cameraFar);
             this.camera.position.set(...pos);
         }
         this.dispatchEvent(new Event("resize"));
@@ -113,31 +121,9 @@ export class ThreeScene extends HTMLElement {
     }
 
 
-    addSTL(url) {
-        return new Promise((resolve, reject) => {
-            const loader = new STLLoader();
-            loader.load(url, (geometry) => {
-                const material = new THREE.MeshPhysicalMaterial({ 
-                    color: 0xf3ecec,
-                    metalness: 1,
-                    roughness: 0,
-                    reflectivity: 1,
-                   
-                });
-                const mesh = new THREE.Mesh(geometry, material);
-                this.root.add(mesh);
-                resolve(mesh);
-            }, undefined, (error) => {
-                reject(error);
-            });
-        })
-    }
-
-
     renderScene() {
         this.renderer.render(this.scene, this.camera);
     }
-
 
     async start() {
         let stop = false;
@@ -164,13 +150,10 @@ export class ThreeScene extends HTMLElement {
         }
     }
 
+
     stop() { }
 
     add(object) {
-        if (object instanceof PointCloud) {
-            if (!this.pointclouds) this.pointclouds = [];
-            this.pointclouds.push(object);
-        }
         this.root.add(object);
     }
 
@@ -192,23 +175,38 @@ export class ThreeScene extends HTMLElement {
 
 
     rayCast(x, y, meshes) {
-        let mouse = new THREE.Vector2(
+        let mouse = new Vector2(
             (x / this.clientWidth) * 2 - 1,
             -(y / this.clientHeight) * 2 + 1
         );
-        let raycaster = new THREE.Raycaster();
+        let raycaster = new Raycaster();
         raycaster.setFromCamera(mouse, this.camera);
         let intersects = raycaster.intersectObjects(meshes || []);
         return intersects;
     }
-  
 
-    set environment(env) {
-        console.log("Setting environment:", env);
-         // ✅ Load an HDRI environment for reflections
 
-        let ext = env.split(".").slice(-1)[0].toLowerCase();
+    async addLoadPromise(loadMethod, url) {
+        let promise = loadMethod(url, (p) => {
+            this._loadPromises.set(promise, {progress: p.loaded / p.total, url});
 
+            let str = [...this._loadPromises].map(([_, info]) => `Loading ${info.url}: ${(info.progress * 100).toFixed(1)}%`).join("\n");
+            console.log(str);
+        });
+        this._loadPromises.set(promise, {url, progress: 0});
+        let result = await promise;
+        this._loadPromises.delete(promise);
+        return result;
+    }
+
+
+    async waitForLoad() {
+        await Promise.all(this._loadPromises.keys());
+    }
+
+
+    async loadEnvironment(url) {
+        let ext = url.split(".").slice(-1)[0].toLowerCase();
         let loader = null;
         switch (ext) {
             case "hdr":
@@ -217,26 +215,30 @@ export class ThreeScene extends HTMLElement {
             case "jpg":
             case "jpeg":
             case "png":
-                loader = new THREE.TextureLoader();
+                loader = new TextureLoader();
                 break;
             default:
                 console.warn("Unsupported environment map format:", ext);
                 return;
         }
-        loader.load(env, (texture) => {
-            console.log("Environment loaded:", env);
-            if (!this.scene) {
-                this.cachedEnvironment = texture;
-            } else {
-                this.parseEnvironmentTexture(texture);
-            }
-        })
+
+
+        let texture = await this.addLoadPromise((u, p) => loader.loadAsync(u, p), url);
+        if (this.scene) {
+            this.parseEnvironmentTexture(texture)
+        } else {
+            this.cachedEnvironment = texture;
+        }
     }
+  
+    set environment(env) {
+        this.loadEnvironment(env);
+    }   
 
 
     parseEnvironmentTexture(texture) {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.mapping = THREE.EquirectangularReflectionMapping;
+        texture.colorSpace = SRGBColorSpace;
+        texture.mapping = EquirectangularReflectionMapping;
         this.scene.environment = texture;
     }
 

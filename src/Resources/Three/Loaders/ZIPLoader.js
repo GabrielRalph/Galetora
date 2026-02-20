@@ -3,7 +3,12 @@ import { LoaderPlus } from "./loader.js";
 import {STLLoader} from "./STLLoader.js";
 import {OBJLoader} from "./OBJLoader.js";
 import { VNFLoader } from "./VNFLoader.js";
-import * as zip from "../zip/index.js";
+import {
+    Uint8ArrayWriter,
+    Uint8ArrayReader,
+    BlobReader,
+    ZipReader,
+} from "../zip/index.js";
 
 const loaders = {
     "stl": STLLoader,
@@ -53,16 +58,16 @@ class ZIPLoader extends LoaderPlus {
 	async parse( data ) {
         let zipFileReader = null;
 		if (data instanceof Blob) {
-            zipFileReader = new zip.BlobReader(data);
+            zipFileReader = new BlobReader(data);
         } else if (data instanceof ArrayBuffer) {
             const uint8Array = new Uint8Array(data);
-            zipFileReader = new zip.Uint8ArrayReader(uint8Array);
+            zipFileReader = new Uint8ArrayReader(uint8Array);
         } else {
             throw new Error("Unsupported data type for ZIPLoader: " + (typeof data));
         }
 
 
-        const zipReader = new zip.ZipReader(zipFileReader);
+        const zipReader = new ZipReader(zipFileReader);
         const entries = await zipReader.getEntries();
         const files = entries.filter(entry => {
             if (entry.directory || entry.filename.startsWith("__MACOSX/")) return false;
@@ -80,7 +85,7 @@ class ZIPLoader extends LoaderPlus {
             let longName = name.split("/").slice(0, -1).join("/") + "/" + shortName; // path + filename without extension
             
             name = longName in fileObjects ? longName : shortName; // use short name if no conflict, otherwise use long name
-            let fileData = await entry.getData(new zip.Uint8ArrayWriter());
+            let fileData = await entry.getData(new Uint8ArrayWriter());
             let loader = new loaders[ext]();
             let object = await loader.parse(fileData.buffer);
             fileObjects[name] = object;

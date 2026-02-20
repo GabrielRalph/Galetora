@@ -1,0 +1,16 @@
+zip:                422.7 kB
+three core:         724 kB
+STLLoader:          14.4 kB	
+VNFLoader:          4.7 kB
+ZIPLoader:	        3.4 kB	
+control:            6.0 kB
+RGBELoader:	        11.8 kB
+pc:	                10.4 kB	
+loader base:	    0.9 kB
+OBJLoader:          21.7 kB
+
+logo.vnf:	        262 kB	
+uluru.png:          1,570 kB	
+poissonButtons.zip: 873 kB	
+
+total:              4.1 MB

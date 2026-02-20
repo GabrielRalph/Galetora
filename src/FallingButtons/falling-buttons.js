@@ -4,6 +4,7 @@ import { Button } from "./button.js";
 
 const ZipedShapes = "./Assets/poissonButtons.zip";
 
+
 class FallingButtons  extends ThreeScene {
 
     boxWidth = 150;
@@ -50,6 +51,11 @@ class FallingButtons  extends ThreeScene {
         this.composer.addPass(this.bloomPass);
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+        this.stop();
+    }
+
 
     /**
      * Handles resizing of the scene, ensuring that the camera and bloom pass are updated
@@ -58,11 +64,24 @@ class FallingButtons  extends ThreeScene {
     resize() {
         super.resize();
         this.camera.lookAt(0, 0, 0);
-        if (this.composer) {
-            this.bloomPass.setSize(this.clientWidth, this.clientHeight);
-            this.composer.setSize(this.clientWidth, this.clientHeight);
-            this.renderPass.camera = this.camera;
-            this.ready = this.clientHeight > 0 && this.clientWidth > 0;
+        this.resizeLogo();
+    }
+
+    resizeLogo() {
+        const {logo} = this;
+        if (logo) {
+            if (!logo.geometry.boundingBox) {
+                logo.geometry.computeBoundingBox();
+            }
+            const box = logo.geometry.boundingBox;
+            const size = box.getSize(new THREE.Vector3());
+            console.log(size.x, size.y);
+            const [w, h] = this.getSizeAtZ(0);
+            logo.scale.setScalar(0.222 * w/size.x);
+            logo.position.y = 0.0825* w
+            logo.position.x = 0.0055 * w
+            logo.rotation.z = -Math.PI / 2;
+            this.add(logo);
         }
     }
 
@@ -264,8 +283,21 @@ class FallingButtons  extends ThreeScene {
         const meshes = [];
 
         // Load meshes from zip
-        const meshesOG = await Button.loadFromZip(ZipedShapes);
+        const [logo, meshesOG] = await Promise.all([
+            this.addLoadPromise(
+                async (url, onP) => await Button.loadFile(url, { onProgress: onP }), 
+                "./Assets/logo.vnf"
+            ),
+            this.addLoadPromise(
+                (url, onP) => Button.loadFromZip(url, { onProgress: onP }),
+                ZipedShapes
+            )
+        ]);
 
+        await this.waitForLoad();
+
+        this.logo = logo;
+        this.resizeLogo();
         // Clone meshes according to this.clones
         for (let key in meshesOG) {
             meshes.push(meshesOG[key]);
@@ -284,6 +316,8 @@ class FallingButtons  extends ThreeScene {
         this.iStart = 1;
 
         this.shapeMeshes = meshes;
+
+        document.body.toggleAttribute("loaded", true)
     }
   
 
