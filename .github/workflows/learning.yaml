@@ -1,12 +1,16 @@
 name: learn-github-actions
-run-name: ${{ github.actor }} is learning GitHub Actions
+run-name: ${{ github.actor }} is Testing Branches
 on: [push]
 jobs:
-  check-bats-version:
+  list-branches:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: git branch
+      - run: |
+          echo "Branches in this repository:"
+          git branch -a
+          echo "Current branch:"
+          git rev-parse --abrev-ref HEAD
