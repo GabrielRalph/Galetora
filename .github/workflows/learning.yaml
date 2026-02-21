@@ -10,7 +10,8 @@ jobs:
         with:
           node-version: '20'
       - run: |
+          git fetch --depth=1 origin "+refs/heads/*:refs/remotes/origin/*"
           echo "Branches in this repository:"
           git branch -a
           echo "Current branch:"
-          git rev-parse --abrev-ref HEAD
+          git rev-parse --abbrev-ref HEAD
