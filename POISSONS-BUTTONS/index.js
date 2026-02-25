@@ -27,6 +27,8 @@ const models = Object.keys(modelGeometries).map(key => {
 
 mViewer.addModels(models);
 
+document.body.setAttribute("loaded", true)
+
 mViewer.addEventListener("model-selected", e => {
     let html = "";
     if (e?.model) {

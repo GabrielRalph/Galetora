@@ -3,7 +3,7 @@ import terser from '@rollup/plugin-terser';
 import fs from 'fs';
 import path from 'path';
 
-const outputDir = 'src/FallingButtons/production';
+const outputDir = 'POISSONS-BUTTONS/build';
 
 
 
@@ -16,7 +16,7 @@ if (fs.existsSync(outputDir)) {
 }
 
 export default {
-	input: 'src/FallingButtons/falling-buttons.js',
+	input: 'POISSONS-BUTTONS/index.js',
 	output: {
 		dir: outputDir,
 		format: 'es',
