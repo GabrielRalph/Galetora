@@ -6,7 +6,7 @@ import { relURL } from "../src/relURL.js";
 /** @type {ModelViewer} */
 const mViewer = document.querySelector("model-viewer");
 const modelInfo = document.querySelector(".model-info");
-const modelGeometries = await ZIPLoader.load(relURL("../Assets/poissonButtons.zip", import.meta));
+const modelGeometries = await ZIPLoader.load(relURL("../Assets/poissonButtonsComplete.zip", import.meta));
 
 const models = Object.keys(modelGeometries).map(key => {
     const geometry = modelGeometries[key];
