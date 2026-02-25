@@ -124,7 +124,7 @@ export class ModelViewer extends ThreeScene {
 
 
     selectModel(model) {
-        if (this.selectedModel != model) {
+        if (model && this.selectedModel != model) {
             // clone model
             this.selectedModel = model;
             let selectedModelClone = model.clone();
@@ -153,7 +153,6 @@ export class ModelViewer extends ThreeScene {
             this.selectedGroup = tGroup;
             model.visible = false;
 
-            
         } else {
             this.selectedModel = null;
         }
@@ -185,8 +184,6 @@ export class ModelViewer extends ThreeScene {
             await tGroup.waitTransition();
             this.backgroundRoot.remove(tGroup);
             selectedModel.visible = true;
-
-            
         }
     }
 
@@ -196,12 +193,9 @@ export class ModelViewer extends ThreeScene {
         if (xRel < this.columnWidth) {
             let intersects = this.rayCast(e.x, e.y, this.column.objects);
             const model = intersects[0]?.object;
-            if (model) {
-                this.deselectModel()
-                this.selectModel(model);
-                this.dispatchEvent(new ModelSelectionEvent(this.selectedModel));
-
-            }
+            this.deselectModel()
+            this.selectModel(model);
+            this.dispatchEvent(new ModelSelectionEvent(this.selectedModel));
         } 
     }
 
