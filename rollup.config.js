@@ -12,7 +12,9 @@ if (fs.existsSync(outputDir)) {
 }
 fs.mkdirSync(outputDir, { recursive: true });
 
-const indexHTMLs = lookForAllHTMLFiles(process.cwd(), /^index$/);
+const indexHTMLs = lookForAllHTMLFiles(process.cwd(), /^index$/).filter(file => 
+  !(file.indexOf("node_modules") >= 0 || file.indexOf("src/") >= 0)
+)
 
 // Map: inputFile -> desiredOutputPathInPublic
 const scriptsToProcess = {};
