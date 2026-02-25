@@ -1,7 +1,7 @@
 console.log("defining new element");
-import {ThreeScene} from "../src/Resources/basic-scene.js";
-import * as THREE from "../src/Resources/Three/three.js";
-import { ObjectControls } from "../src/Resources/Three/Controls/control.js";
+import {ThreeScene} from "./Resources/basic-scene.js";
+import * as THREE from "./Resources/Three/three.js";
+import { ObjectControls } from "./Resources/Three/Controls/control.js";
 import { TransitionGroup } from "./transition.js";
 
 export class Column {

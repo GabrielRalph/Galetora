@@ -1,3 +1,5 @@
 /private
 /.vscode
 /node_modules
+/public
+package-lock.json

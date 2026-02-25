@@ -17,6 +17,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "@rollup/plugin-terser": "^0.4.4"
+    "@rollup/plugin-terser": "^0.4.4",
+    "cheerio": "^1.1.0"
   }
 }

@@ -1,9 +1,11 @@
+import { relURL } from "../relURL.js";
+
 import { ThreeScene } from "../Resources/basic-scene.js";
 import * as THREE from "../Resources/Three/three.js";
 import { Button } from "./button.js";
 
-const ZipedShapes = "./Assets/poissonButtons.zip";
 
+const ZipedShapes = relURL("../../Assets/poissonButtons.zip", import.meta);
 
 class FallingButtons  extends ThreeScene {
 
@@ -29,27 +31,27 @@ class FallingButtons  extends ThreeScene {
     }
 
 
-    async createBloomPass() {
-        console.log("Creating bloom pass...");
-        const { EffectComposer } = await import("../Resources/Three/Effects/postprocessing/EffectComposer.js");
-        const { RenderPass } = await import("../Resources/Three/Effects/postprocessing/RenderPass.js");
-        const { UnrealBloomPass } = await import("../Resources/Three/Effects/postprocessing/UnrealBloomPass.js");
+    // async createBloomPass() {
+    //     console.log("Creating bloom pass...");
+    //     const { EffectComposer } = await import("../Resources/Three/Effects/postprocessing/EffectComposer.js");
+    //     const { RenderPass } = await import("../Resources/Three/Effects/postprocessing/RenderPass.js");
+    //     const { UnrealBloomPass } = await import("../Resources/Three/Effects/postprocessing/UnrealBloomPass.js");
      
-        this.composer = new EffectComposer(this.renderer);
-        this.renderPass = new RenderPass(this.scene, this.camera);
+    //     this.composer = new EffectComposer(this.renderer);
+    //     this.renderPass = new RenderPass(this.scene, this.camera);
 
-        this.bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(this.innerWidth, this.innerHeight),
-            1.5,
-            0.4,
-            0.9
-        );
-        this.composer.setSize(this.clientWidth, this.clientHeight);
-        this.ready = this.clientHeight > 0 && this.clientWidth > 0;
+    //     this.bloomPass = new UnrealBloomPass(
+    //         new THREE.Vector2(this.innerWidth, this.innerHeight),
+    //         1.5,
+    //         0.4,
+    //         0.9
+    //     );
+    //     this.composer.setSize(this.clientWidth, this.clientHeight);
+    //     this.ready = this.clientHeight > 0 && this.clientWidth > 0;
 
-        this.composer.addPass(this.renderPass);
-        this.composer.addPass(this.bloomPass);
-    }
+    //     this.composer.addPass(this.renderPass);
+    //     this.composer.addPass(this.bloomPass);
+    // }
 
     connectedCallback() {
         super.connectedCallback();
@@ -286,7 +288,7 @@ class FallingButtons  extends ThreeScene {
         const [logo, meshesOG] = await Promise.all([
             this.addLoadPromise(
                 async (url, onP) => await Button.loadFile(url, { onProgress: onP }), 
-                "./Assets/logo.vnf"
+                relURL("../../Assets/logo.vnf", import.meta)
             ),
             this.addLoadPromise(
                 (url, onP) => Button.loadFromZip(url, { onProgress: onP }),
