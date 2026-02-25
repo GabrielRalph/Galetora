@@ -24,10 +24,10 @@ jobs:
         run: git fetch --no-tags --depth=1 origin master
 
       - name: Get the submodules
-        run: git submodule update --init --recursive
+        run: git submodule update --init --recursive --depth=1
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build public directory
         run: npm run build
