@@ -4,6 +4,12 @@ import * as THREE from "./Resources/Three/three.js";
 import { ObjectControls } from "./Resources/Three/Controls/control.js";
 import { TransitionGroup } from "./transition.js";
 
+// import { EffectComposer } from "./Resources/Three/Effects/postprocessing/EffectComposer.js";
+// import { RenderPass } from "./Resources/Three/Effects/postprocessing/RenderPass.js";
+// import { OutlinePass } from "./Resources/Three/Effects/postprocessing/OutlinePass.js";
+// import { FXAAShader } from "./Resources/Three/Effects/shaders/FXAAShader.js";
+// import { ShaderPass } from "./Resources/Three/Effects/postprocessing/ShaderPass.js";
+
 export class Column {
     _gap = 0;
     _pos = [0, 0];
@@ -100,6 +106,39 @@ export class ModelViewer extends ThreeScene {
 
         this.addEventListener("mousemove", this.onMouseMove.bind(this))
         this.addEventListener("click", this.onMouseClick.bind(this))
+
+        // this.initComposer();
+    }
+
+    initComposer() {
+        // this.composer = new EffectComposer(this.renderer);
+        // this.renderPass = new RenderPass(this.foregroundScene, this.camera);
+        // this.composer.addPass(this.renderPass);
+
+        // this.outlinePass = new OutlinePass(
+        //     new THREE.Vector2(10, 10),
+        //     this.foregroundScene,
+        //     this.camera
+        // );
+
+        // // Outline look
+        // this.outlinePass.visibleEdgeColor.set(0x000000);
+        // this.outlinePass.hiddenEdgeColor.set(0x000000);
+        // this.outlinePass.edgeStrength = 6;
+        // this.outlinePass.edgeThickness =2
+        // this.outlinePass.pulsePeriod = 0; // no pulsing
+        // this.outlinePass.edgeGlow = 0;
+
+        // this.composer.addPass(this.outlinePass);
+
+        // this.fxaaPass = new ShaderPass(FXAAShader);
+        // this.composer.addPass(this.fxaaPass);
+    }
+
+
+    setOutlinedObject(obj) {
+        if (!this.outlinePass) return;
+        this.outlinePass.selectedObjects = obj ? [obj] : [];
     }
 
     addModels(models) {
@@ -122,13 +161,12 @@ export class ModelViewer extends ThreeScene {
         this.resizeColumn(20);
     }
 
-
     selectModel(model) {
         if (model && this.selectedModel != model) {
             // clone model
             this.selectedModel = model;
             let selectedModelClone = model.clone();
-    
+            
             // get model matrix
             model.updateMatrixWorld();
             let mMi = model.matrix.clone().invert();
@@ -141,6 +179,17 @@ export class ModelViewer extends ThreeScene {
             tGroup.transitionFunction = cosT;
             tGroup.model = selectedModelClone;
             tGroup.add(selectedModelClone);
+
+            this.setOutlinedObject(selectedModelClone);
+
+            // let outline = model.clone();
+            // const outlineMat = new THREE.MeshBasicMaterial({
+            //     color: 0x000000,
+            //     side: THREE.BackSide, // draw backfaces
+            // });
+            // outline.scale.setScalar(1.03);
+            // outline.material = outlineMat;
+            // tGroup.add(outline);
         
             this.selectedContainer.updateWorldMatrix(true, false); // ensure it's current
             const scMi = this.selectedContainer.matrixWorld.clone().invert();
@@ -152,6 +201,8 @@ export class ModelViewer extends ThreeScene {
             
             this.selectedGroup = tGroup;
             model.visible = false;
+
+            
 
         } else {
             this.selectedModel = null;
@@ -188,6 +239,7 @@ export class ModelViewer extends ThreeScene {
     }
 
 
+
     onMouseClick(e) {
         let xRel = e.x / this.clientWidth;
         if (xRel < this.columnWidth) {
@@ -212,14 +264,67 @@ export class ModelViewer extends ThreeScene {
     }
 
 
-    resize() {
-        super.resize();
+
+
+    getViewSizeAtZ(z) {
+        if (this.useOrtho) {
+            return this.camera.__size || [this.clientWidth, this.clientHeight];
+        } else {
+            return super.getViewSizeAtZ(z);
+        }
+    }
+
+
+    resize(e) {
+        super.resize(e);
+        let { width, height } = e[0].contentRect;
+        this.resizeOrtho(width, height);
+        this.resizeComposer(width, height);
         this.resizeColumn(20);
+    }
+
+    resizeOrtho(w, h) {
+        if (this.useOrtho) {
+            let oldCamPos = this.camera.position.toArray();
+            this.camera = new THREE.OrthographicCamera(w / -2, w / 2, h / 2, h / -2, this.cameraNear, this.cameraFar);
+            this.camera.position.set(...oldCamPos);
+            this.camera.__size = [w, h];
+        }
+    }
+
+    resizeComposer(w, h) {
+        if (w > 0 && h > 0 && this.composer) {
+            console.log(`Resizing composer to ${w}x${h}`);
+            this._compReady = true;
+
+            const dpr = Math.min(2, window.devicePixelRatio || 1);
+            
+            this.composer.setPixelRatio(dpr);
+            this.composer.setSize(w, h);
+            this.outlinePass.setSize(w, h);
+
+            this.renderPass.camera = this.camera;
+            this.outlinePass.renderCamera = this.camera;
+            
+          
+            this.outlinePass.edgeThickness = 3* dpr;
+            this.outlinePass.edgeStrength = 10;
+            this.outlinePass.edgeGlow = 0;
+
+            // FXAA needs inverse resolution in *pixels*
+            if (this.fxaaPass?.material?.uniforms?.resolution) {
+                this.fxaaPass.material.uniforms.resolution.value.set(
+                1 / (w * dpr),
+                1 / (h * dpr)
+                );
+            }
+        }
     }
 
     resizeColumn(gap) {
         if (this.column) {
             const [w, h] = this.getViewSizeAtZ(0);
+        
             const width = this.column.orderObjects(h - 2*gap, gap*5);
             this.column.position = [width/2 + gap - w/2, h/2-gap];
             this.columnWidth =  (width + 2*gap) / w;
@@ -230,6 +335,8 @@ export class ModelViewer extends ThreeScene {
 
         }
     }
+
+
 
     beforeRender() {
         this.foregroundControls.update(this.selectedContainer)
@@ -242,14 +349,44 @@ export class ModelViewer extends ThreeScene {
     }
 
     renderScene() {
+        if (this.composer && !this._compReady) {
+            return 
+        }
         this.renderer.autoClear = false;
         this.renderer.clear();
         this.renderer.render(this.backgroundScene, this.camera);
         this.renderer.clearDepth(); // 🔑 key line
-        this.renderer.render(this.foregroundScene, this.camera);
+        if (this.composer) {
+            this.composer.render();
+        } else {
+            this.renderer.render(this.foregroundScene, this.camera);
+        }
         this.renderer.clearDepth(); // 🔑 key line
         this.renderer.render(this.scene, this.camera);
-        // this.renderer.
+    }
+
+    set modelXRotation(value) {
+        let m = new THREE.Matrix4().makeRotationX(value);
+        this.selectedContainer.applyMatrix4(m);
+    }
+    get modelXRotation() {
+        return 0;
+    }
+
+    set modelYRotation(value) {
+        let m = new THREE.Matrix4().makeRotationY(value);
+        this.selectedContainer.applyMatrix4(m);
+    }
+    get modelYRotation() {
+        return 0;
+    }
+
+    set modelZRotation(value) {
+        let m = new THREE.Matrix4().makeRotationZ(value);
+        this.selectedContainer.applyMatrix4(m);
+    }
+    get modelZRotation() {
+        return 0;
     }
 
 

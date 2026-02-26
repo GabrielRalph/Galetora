@@ -87,13 +87,16 @@ export class ThreeScene extends HTMLElement {
         return [viewSize.x, viewSize.y];
     }
  
-    resize() {
+    /**
+     * @param {ResizeObserverEntry[]} entries
+     */
+    resize(entries) {
         if (this.renderer) {
-            let { clientWidth, clientHeight } = this;
+            let { width, height } = entries[0].contentRect;
             let pos = this.camera.position.toArray();
-            this.renderer.setSize(clientWidth, clientHeight);
+            this.renderer.setSize(width, height);
             this.renderer.setPixelRatio(window.devicePixelRatio);
-            this.camera = new PerspectiveCamera(this.cameraFOV, clientWidth / clientHeight, this.cameraNear, this.cameraFar);
+            this.camera = new PerspectiveCamera(this.cameraFOV, width / height, this.cameraNear, this.cameraFar);
             this.camera.position.set(...pos);
         }
         this.dispatchEvent(new Event("resize"));
