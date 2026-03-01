@@ -63,8 +63,8 @@ class FallingButtons  extends ThreeScene {
      * Handles resizing of the scene, ensuring that the camera and bloom pass are updated
      * 
      */
-    resize() {
-        super.resize();
+    resize(e) {
+        super.resize(e);
         this.camera.lookAt(0, 0, 0);
         this.resizeLogo();
     }
